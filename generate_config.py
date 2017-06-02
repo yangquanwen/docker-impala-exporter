@@ -23,7 +23,7 @@ def parse_metric(group_name, path_pattern, m, out):
 		kind = m["kind"]
 	values = {}
 	if "value" in m:
-		values["value"] = m["value"]
+		values["value"] = "$.value" 
 
 	labels = {"kind": kind, "units": m["units"], "group": group_name}
 	if kind == "HISTOGRAM":
@@ -51,9 +51,12 @@ for m in report["metric_group"]["metrics"]:
 	group_name = report["metric_group"]["name"]
 	parse_metric(group_name, '$.metric_group.metrics[*]?(@.name == "%s")', m, out) 
 
-for g in report["metric_group"]["child_groups"]:
+for index, g in enumerate(report["metric_group"]["child_groups"]):
 	group_name = g["name"]
-	for index, m in enumerate(g["metrics"]):
-		parse_metric(group_name, '$.metric_group.child_metrics[%d].metrics[*]?(@.name == "%%s")' % index, m, out) 
+	for subindex, m in enumerate(g["metrics"]):
+		#this doesn't work due to bug in jsonpath library. It just matches first metrics item with expression and ignores the rest
+                #so we need to find metrics item by index and match by name just in case
+		#parse_metric(group_name, '$.metric_group.child_groups[%d].metrics[*]?(@.name == "%%s")' % index, m, out) 
+		parse_metric(group_name, '$.metric_group.child_groups[%d].metrics[%d]?(@.name == "%%s")' % (index, subindex), m, out) 
 
 print yaml.safe_dump(out, default_flow_style = False)
